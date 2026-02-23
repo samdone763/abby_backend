@@ -10,7 +10,7 @@ const crypto = require("crypto");
 const Order = require("../models/Order");
 const { validateOrder } = require("../middleware/validate");
 const { sendOrderNotification } = require("../utils/mailer");
-const { sendSMS } = require("../utils/sms");
+
 
 // ─── POST /api/orders ──────────────────────────────────────────
 // Submit a new customer order
@@ -41,7 +41,6 @@ router.post("/", validateOrder, async (req, res) => {
     // Send email notification to bakery owner (non-blocking)
     try {
       await sendOrderNotification(order);
-        await sendSMS("+255620767919", "New Order: " + order.customer.name + " ordered " + order.item.type + ". Call: " + order.customer.phone);
       order.emailSent = true;
       await order.save({ validateBeforeSave: false });
     } catch (emailErr) {
