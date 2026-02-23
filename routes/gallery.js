@@ -2,6 +2,10 @@ const express = require('express');
 const router = express.Router();
 const Gallery = require('../models/Gallery');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage, limits: { fileSize: 20 * 1024 * 1024 } });
 
 function authCheck(req, res, next) {
   try {
@@ -13,7 +17,7 @@ function authCheck(req, res, next) {
   }
 }
 
-// GET all photos (public)
+// GET all photos
 router.get('/', async (req, res) => {
   try {
     const photos = await Gallery.find().sort({ createdAt: -1 });
@@ -23,19 +27,21 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST upload photo (admin only)
-router.post('/', authCheck, async (req, res) => {
+// POST upload photo
+router.post('/upload', authCheck, upload.single('photo'), async (req, res) => {
   try {
-    const { caption, imageData } = req.body;
-    if (!caption || !imageData) return res.status(400).json({ success: false, message: 'Caption and image required' });
-    const photo = await Gallery.create({ caption, imageData });
+    const caption = req.body.caption || '';
+    if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+    const imageData = req.file.buffer.toString('base64');
+    const mimeType = req.file.mimetype;
+    const photo = await Gallery.create({ caption, imageData, mimeType });
     res.json({ success: true, data: photo });
   } catch(e) {
     res.status(500).json({ success: false, message: e.message });
   }
 });
 
-// DELETE photo (admin only)
+// DELETE photo
 router.delete('/:id', authCheck, async (req, res) => {
   try {
     await Gallery.findByIdAndDelete(req.params.id);
