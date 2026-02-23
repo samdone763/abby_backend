@@ -36,7 +36,28 @@ router.post("/", validateOrder, async (req, res) => {
       dateNeeded,
       notes: notes || "",
       ipHash,
-    });
+    });// Send SMS notification via Africa's Talking
+try {
+  const AfricasTalking = require('africastalking');
+  const at = AfricasTalking({
+    apiKey: 'atsk_014901dba20aa6258e799169535a2fba8cea49aaee7583c0a9c587e089498d4f3897a667',
+    username: 'Sam Done'
+  });
+  const sms = at.SMS;
+  const itemName = order.item?.name || 'Unknown item';
+  const custName = order.customer?.name || 'Unknown';
+  const custPhone = order.customer?.phone || '-';
+  const location = order.delivery?.address || '-';
+  const halfPaid = order.item?.halfPaid || 0;
+  const message = `🎂 NEW ORDER!\nItem: ${itemName}\nCustomer: ${custName}\nPhone: ${custPhone}\nLocation: ${location}\nHalf Paid: TZS ${halfPaid}\nOrder ID: ${order.orderId}`;
+  await sms.send({
+    to: ['+255620767919'],
+    message: message,
+    from: ''
+  });
+} catch(smsErr) {
+  console.error('SMS failed:', smsErr.message);
+}
 
     // Send email notification to bakery owner (non-blocking)
     try {
