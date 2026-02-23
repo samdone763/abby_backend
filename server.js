@@ -17,6 +17,7 @@ const connectDB = require("./config/db");
 const orderRoutes = require("./routes/orders");
 const adminRoutes = require("./routes/admin");
 const chatRoutes = require("./routes/chat");
+const galleryRoutes = require("./routes/gallery");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -83,6 +84,7 @@ app.get("/api/health", (req, res) => {
 app.use("/api/orders", orderLimiter, orderRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/gallery", galleryRoutes);
 
 // ─── 404 Handler ─────────────────────────────────────────────
 app.use("*", (req, res) => {
