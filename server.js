@@ -40,8 +40,8 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 // ─── Body Parsing ─────────────────────────────────────────────
-app.use(express.json({ limit: "10kb" })); // Limit payload size
-app.use(express.urlencoded({ extended: true, limit: "10kb" }));
+app.use(express.json({ limit: "20mb" })); // Limit payload size
+app.use(express.urlencoded({ extended: true, limit: "20mb" }));
 
 // ─── Global Rate Limiting ─────────────────────────────────────
 const globalLimiter = rateLimit({
