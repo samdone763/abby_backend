@@ -49,7 +49,9 @@ try {
   const custPhone = order.customer?.phone || '-';
   const location = order.delivery?.address || '-';
   const halfPaid = order.item?.halfPaid || 0;
-  const message = `🎂 NEW ORDER!\nItem: ${itemName}\nCustomer: ${custName}\nPhone: ${custPhone}\nLocation: ${location}\nHalf Paid: TZS ${halfPaid}\nOrder ID: ${order.orderId}`;
+  const paymentLink = order.paymentScreenshotUrl ? `\n📸 Payment: ${order.paymentScreenshotUrl}` : '';
+const refLink = order.referencePhotoUrl ? `\n🖼 Reference: ${order.referencePhotoUrl}` : '';
+const message = `🎂 NEW ORDER!\nItem: ${itemName}\nCustomer: ${custName}\nPhone: ${custPhone}\nLocation: ${location}\nHalf Paid: TZS ${halfPaid}\nOrder ID: ${order.orderId}${paymentLink}${refLink}`;
   await sms.send({
     to: ['+255620767919'],
     message: message,
