@@ -40,8 +40,8 @@ router.post("/", validateOrder, async (req, res) => {
 try {
   const AfricasTalking = require('africastalking');
   const at = AfricasTalking({
-    apiKey: 'atsk_014901dba20aa6258e799169535a2fba8cea49aaee7583c0a9c587e089498d4f3897a667',
-    username: 'Sam Done'
+    apiKey: 'atsk_de05ce164e49a8478c00209bf31dac6048e3ed9de296f9d73c7acdcde64cfd41e4be29d1',
+username: 'SamDone'
   });
   const sms = at.SMS;
   const itemName = order.item?.name || 'Unknown item';
