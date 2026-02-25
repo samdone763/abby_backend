@@ -1,6 +1,6 @@
 /**
  * routes/chat.js
- * Secure proxy for Anthropic Claude API calls
+ * Secure proxy for Groq AI API calls (Free)
  */
 
 const express = require("express");
@@ -44,7 +44,7 @@ MENU - CAKES:
 - Flavour Cakes 1kg - TZS 35,000
 - Fruits Cake 1kg - TZS 55,000
 - Red Velvet Cake 1kg - TZS 40,000
-- Special/Custom Order - Price varies (contact us)
+- Special/Custom Order - Price varies
 
 HOW TO ORDER:
 1. Go to the Order tab on the website
@@ -52,7 +52,7 @@ HOW TO ORDER:
 3. Pay HALF the price to 0620767919 (Gift Lyimo) via M-Pesa, Tigo Pesa or Airtel Money
 4. Take a screenshot of your payment confirmation
 5. Fill in your details and upload the screenshot
-6. Submit - a WhatsApp button will appear to confirm your order directly
+6. Submit - a WhatsApp button will appear to confirm your order
 
 RULES:
 - Answer in the same language the user writes in (Swahili or English)
@@ -66,17 +66,9 @@ router.post(
   "/",
   chatLimiter,
   [
-    body("messages")
-      .isArray({ min: 1, max: 50 })
-      .withMessage("messages must be an array of 1-50 items"),
-    body("messages.*.role")
-      .isIn(["user", "assistant"])
-      .withMessage("Invalid message role"),
-    body("messages.*.content")
-      .isString()
-      .trim()
-      .isLength({ min: 1, max: 2000 })
-      .withMessage("Message content must be 1-2000 characters"),
+    body("messages").isArray({ min: 1, max: 50 }).withMessage("messages must be an array of 1-50 items"),
+    body("messages.*.role").isIn(["user", "assistant"]).withMessage("Invalid message role"),
+    body("messages.*.content").isString().trim().isLength({ min: 1, max: 2000 }).withMessage("Message content must be 1-2000 characters"),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -87,34 +79,35 @@ router.post(
     try {
       const { messages } = req.body;
 
-      if (!process.env.ANTHROPIC_API_KEY) {
+      if (!process.env.GROQ_API_KEY) {
         return res.status(503).json({
           success: false,
           message: "AI assistant is currently unavailable. Please call us at 0620 767 919.",
         });
       }
 
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": process.env.ANTHROPIC_API_KEY,
-          "anthropic-version": "2023-06-01",
+          "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
         },
         body: JSON.stringify({
-          model: "claude-haiku-4-5-20251001",
+          model: "llama-3.1-8b-instant",
           max_tokens: 500,
-          system: SYSTEM_PROMPT,
-          messages: messages.map((m) => ({
-            role: m.role,
-            content: String(m.content).slice(0, 2000),
-          })),
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            ...messages.map((m) => ({
+              role: m.role,
+              content: String(m.content).slice(0, 2000),
+            }))
+          ],
         }),
       });
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        console.error("Anthropic API error:", response.status, errData);
+        console.error("Groq API error:", response.status, errData);
         return res.status(502).json({
           success: false,
           message: "AI assistant is having issues. Please try again shortly.",
@@ -122,7 +115,7 @@ router.post(
       }
 
       const data = await response.json();
-      const reply = data.content?.[0]?.text || "";
+      const reply = data.choices?.[0]?.message?.content || "";
 
       res.json({ success: true, reply });
     } catch (err) {
