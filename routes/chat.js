@@ -1,7 +1,6 @@
 /**
  * routes/chat.js
  * Secure proxy for Anthropic Claude API calls
- * Keeps API key server-side and enforces bakery-only context
  */
 
 const express = require("express");
@@ -9,61 +8,67 @@ const router = express.Router();
 const rateLimit = require("express-rate-limit");
 const { body, validationResult } = require("express-validator");
 
-// Strict rate limit for AI chat (expensive API calls)
 const chatLimiter = rateLimit({
-  windowMs: 60 * 1000,  // 1 minute
-  max: 20,               // 20 messages per minute per IP
+  windowMs: 60 * 1000,
+  max: 20,
   message: { success: false, message: "Slow down! Please wait a moment before sending more messages." },
 });
 
-const SYSTEM_PROMPT = `You are the friendly AI assistant for Abby Cake and Bites, a professional bakery in Njiapanda, Himo, Tanzania. Your name is "Abby".
+const SYSTEM_PROMPT = `You are Abby AI, a friendly assistant for Abby Cake & Bites bakery in Himo, Tanzania.
 
-BUSINESS INFO:
-- Name: Abby Cake and Bites
-- Location: Njiapanda, 25232 Njiapanda, Himo, Tanzania
+ABOUT THE BAKERY:
+- Name: Abby Cake & Bites
+- Location: Njiapanda, Himo, Tanzania
 - Phone/WhatsApp: 0620 767 919
-- Email: lyndagift06@gmail.com
-- Hours: Mon–Thu 7AM–7PM, Fri–Sat 7AM–8PM, Sunday: Closed
-- Current Status: Closed — Opens Monday 7AM
-- Payment: Cash on pickup or M-Pesa
+- Payment recipient: Gift Lyimo (0620767919)
+- Opening hours: Mon-Fri 7AM-7PM, Sat 7AM-8PM, Sun 8AM-5PM
+- Delivery: Available in Himo area, TZS 3,000-8,000
+- Payment methods: M-Pesa, Tigo Pesa, Airtel Money (half payment required upfront)
+- Website: https://samdone763.github.io/abby-order
 
-MENU & PRICES:
-Custom Cakes: Birthday (TZS 25,000–80,000), Wedding (TZS 80,000–300,000), Anniversary (TZS 30,000–75,000), Baby Shower (TZS 28,000–60,000)
-Flavors: Vanilla, Chocolate, Red Velvet, Lemon (included), Strawberry & Caramel (+TZS 3,000)
-Bites: Cupcakes 6pcs/12pcs (TZS 12,000/22,000), Cookies (TZS 8,000–15,000), Brownies (TZS 10,000–20,000), Cake Pops (TZS 12,000–22,000), Doughnuts (TZS 9,000–17,000), Muffins (TZS 8,000–15,000)
+MENU - BITES:
+- Decorated Cupcakes (with buttercream) - TZS 10,000
+- Plain Cupcakes 6pcs - TZS 3,000
+- Cookies Package - TZS 5,000
+- Chapati Package - TZS 10,000
+- Donut Package 6pcs - TZS 10,000
+- Mandazi 10pcs - TZS 3,000
+- Meat Sambusa 8pcs - TZS 10,000
+- Bagia 10pcs - TZS 5,000
 
-DELIVERY: Available in Himo town and nearby. Fee: TZS 3,000–8,000.
-CUSTOM ORDERS: Yes. Please order at least 3 days in advance.
+MENU - CAKES:
+- Plain Cake - TZS 10,000
+- Bento Cake - TZS 15,000
+- Birthday Cake 700g - TZS 25,000
+- Chocolate Cake 1kg - TZS 45,000
+- Flavour Cakes 1kg - TZS 35,000
+- Fruits Cake 1kg - TZS 55,000
+- Red Velvet Cake 1kg - TZS 40,000
+- Special/Custom Order - Price varies (contact us)
 
-ORDER COLLECTION: When a customer wants to order, collect these one by one:
-1. Full name
-2. Phone number
-3. What they want (cake type or bites)
-4. Size
-5. Flavor
-6. Quantity
-7. Pickup or delivery?
-8. If delivery: address
-9. Date/time needed
-
-When ALL details are collected, respond with this EXACT format at the end:
-ORDER_JSON:{"customerName":"...","customerPhone":"...","itemType":"...","size":"...","flavor":"...","quantity":"...","deliveryType":"pickup or delivery","address":"...","dateNeeded":"...","notes":"..."}
+HOW TO ORDER:
+1. Go to the Order tab on the website
+2. Select your item from the menu
+3. Pay HALF the price to 0620767919 (Gift Lyimo) via M-Pesa, Tigo Pesa or Airtel Money
+4. Take a screenshot of your payment confirmation
+5. Fill in your details and upload the screenshot
+6. Submit - a WhatsApp button will appear to confirm your order directly
 
 RULES:
+- Answer in the same language the user writes in (Swahili or English)
 - Only discuss Abby Cake and Bites topics
-- Be warm, friendly, and professional
-- If asked about unrelated topics, politely redirect to bakery services
-- Keep responses concise
-- Use occasional emojis 🎂`;
+- Be warm, friendly and professional
+- Keep responses short and clear
+- Use occasional emojis 🎂
+- If asked to order, direct them to the website Order tab`;
 
-// ─── POST /api/chat ────────────────────────────────────────────
 router.post(
   "/",
   chatLimiter,
   [
     body("messages")
       .isArray({ min: 1, max: 50 })
-      .withMessage("messages must be an array of 1–50 items"),
+      .withMessage("messages must be an array of 1-50 items"),
     body("messages.*.role")
       .isIn(["user", "assistant"])
       .withMessage("Invalid message role"),
@@ -71,7 +76,7 @@ router.post(
       .isString()
       .trim()
       .isLength({ min: 1, max: 2000 })
-      .withMessage("Message content must be 1–2000 characters"),
+      .withMessage("Message content must be 1-2000 characters"),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -97,19 +102,19 @@ router.post(
           "anthropic-version": "2023-06-01",
         },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1024,
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 500,
           system: SYSTEM_PROMPT,
           messages: messages.map((m) => ({
             role: m.role,
-            content: String(m.content).slice(0, 2000), // Hard cap
+            content: String(m.content).slice(0, 2000),
           })),
         }),
       });
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        console.error("❌ Anthropic API error:", response.status, errData);
+        console.error("Anthropic API error:", response.status, errData);
         return res.status(502).json({
           success: false,
           message: "AI assistant is having issues. Please try again shortly.",
@@ -120,9 +125,8 @@ router.post(
       const reply = data.content?.[0]?.text || "";
 
       res.json({ success: true, reply });
-
     } catch (err) {
-      console.error("❌ Chat route error:", err);
+      console.error("Chat route error:", err);
       res.status(500).json({
         success: false,
         message: "An error occurred. Please try again or call 0620 767 919.",
