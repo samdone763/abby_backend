@@ -85,7 +85,7 @@ app.use("/api/orders", orderLimiter, orderRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/gallery", galleryRoutes);
-app.use("/api/setup", require("./routes/setup"));
+
 // ─── 404 Handler ─────────────────────────────────────────────
 app.use("*", (req, res) => {
   res.status(404).json({ success: false, message: "Route not found." });
